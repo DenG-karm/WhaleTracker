@@ -1,0 +1,108 @@
+services:
+  # --- 0. POSTGRESQL (Ana Veritabanı) ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: whaletracker_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-whaletracker}
+      POSTGRES_USER: ${POSTGRES_USER:-whale}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-whale_secret_2024}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U whale -d whaletracker"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- 1. REDIS (Cache + Celery Broker + JWT Blacklist) ---
+  redis:
+    image: redis:7-alpine
+    container_name: whaletracker_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- 2. PYTHON BACKEND (FastAPI) ---
+  backend:
+    build: ./backend
+    container_name: whaletracker_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/uploads:/app/uploads
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    command: >
+      sh -c "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- 3. CELERY WORKER (Ağır Arka Plan Görevleri) ---
+  celery_worker:
+    build: ./backend
+    container_name: whaletracker_celery
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    command: celery -A celery_app worker --loglevel=info --concurrency=4 -Q default,whale_alerts,ai_tasks
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # --- 3.5 CELERY BEAT (Zamanlanmış Görevler) ---
+  celery_beat:
+    build: ./backend
+    container_name: whaletracker_celery_beat
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+    command: celery -A celery_app beat --loglevel=info
+    depends_on:
+      redis:
+        condition: service_healthy
+      celery_worker:
+        condition: service_started
+    restart: unless-stopped
+
+  # --- 4. REACT FRONTEND ---
+  frontend:
+    build: ./frontend
+    container_name: whaletracker_frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+      - ./frontend/package.json:/app/package.json
+    environment:
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_GOOGLE_CLIENT_ID=218258206648-9pd9inv457ingj2q5sbhelj37ovo372m.apps.googleusercontent.com
+    command: npm start
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

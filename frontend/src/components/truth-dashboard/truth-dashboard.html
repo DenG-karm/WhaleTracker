@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard of Truth — WhaleTracker</title>
+  <style>
+    /* ─────────────────────────────────────────────────────────
+       RESET & TOKENS
+    ───────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg-base:      #04060f;
+      --bg-surface:   #080c18;
+      --bg-card:      #0b0f1e;
+      --bg-card-alt:  #0d1124;
+      --border-dim:   rgba(255, 255, 255, 0.055);
+
+      --text-primary: #e4eaf4;
+      --text-secondary: #7a879d;
+      --text-muted:   #3c4a5e;
+
+      --red:          #ff4444;
+      --red-dim:      rgba(255, 68, 68, 0.08);
+      --cyan:         #00b4d8;
+      --cyan-dim:     rgba(0, 180, 216, 0.07);
+      --blue:         #0077ff;
+      --green:        #00e676;
+      --green-dim:    rgba(0, 230, 118, 0.06);
+
+      --radius-card:  3px;
+      --radius-inner: 2px;
+      --font: 'Inter', 'SF Pro Display', system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-family: var(--font);
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 56px 24px;
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       DASHBOARD SHELL
+    ───────────────────────────────────────────────────────── */
+    .truth-dashboard {
+      width: 100%;
+      max-width: 1120px;
+    }
+
+    .truth-dashboard__header {
+      margin-bottom: 36px;
+    }
+
+    .truth-dashboard__eyebrow {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .truth-dashboard__title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      letter-spacing: -0.035em;
+      color: var(--text-primary);
+      line-height: 1;
+    }
+
+    .truth-dashboard__subtitle {
+      margin-top: 8px;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+    }
+
+    .truth-dashboard__grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      align-items: start;
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       CARD — SHARED BASE
+    ───────────────────────────────────────────────────────── */
+    .truth-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-card);
+      padding: 26px 22px 22px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* subtle top shimmer line (shared) */
+    .truth-card::before {
+      content: '';
+      position: absolute;
+      inset: 0 0 auto 0;
+      height: 1px;
+      background: linear-gradient(
+        90deg,
+        transparent 0%,
+        var(--_shimmer, rgba(255,255,255,0.06)) 50%,
+        transparent 100%
+      );
+      pointer-events: none;
+    }
+
+    .truth-card__tag {
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 18px;
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       CARD 1 — THE BLEED
+    ───────────────────────────────────────────────────────── */
+    .truth-card--bleed {
+      --_shimmer: rgba(255, 68, 68, 0.12);
+      border-bottom: 2px solid var(--red);
+      box-shadow:
+        0 0 60px rgba(255, 68, 68, 0.04),
+        inset 0 -1px 0 rgba(255, 68, 68, 0.18);
+    }
+
+    .bleed__amount {
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: -0.045em;
+      color: var(--red);
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      text-shadow:
+        0 0 32px rgba(255, 68, 68, 0.55),
+        0 0 80px rgba(255, 68, 68, 0.2);
+      margin-bottom: 10px;
+    }
+
+    .bleed__caption {
+      font-size: 0.76rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      letter-spacing: 0.015em;
+      margin-bottom: 22px;
+    }
+
+    .bleed__divider {
+      width: 100%;
+      height: 1px;
+      background: rgba(255, 68, 68, 0.1);
+      margin-bottom: 18px;
+    }
+
+    .bleed__stats {
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .bleed__stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .bleed__stat-key {
+      font-size: 0.67rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .bleed__stat-val {
+      font-size: 0.72rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--red);
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       CARD 2 — DISCIPLINE ROI
+    ───────────────────────────────────────────────────────── */
+    .truth-card--discipline {
+      --_shimmer: rgba(0, 180, 216, 0.1);
+      border-bottom: 2px solid var(--cyan);
+      box-shadow:
+        0 0 60px rgba(0, 180, 216, 0.04),
+        inset 0 -1px 0 rgba(0, 180, 216, 0.16);
+    }
+
+    .discipline__heading {
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      margin-bottom: 24px;
+    }
+
+    .discipline__row {
+      margin-bottom: 20px;
+    }
+
+    .discipline__row:last-of-type {
+      margin-bottom: 0;
+    }
+
+    .discipline__row-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 7px;
+    }
+
+    .discipline__row-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .discipline__row-label--bad   { color: #ff6b6b; }
+    .discipline__row-label--good  { color: var(--cyan); }
+
+    .discipline__row-pct {
+      font-size: 1.1rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      font-variant-numeric: tabular-nums;
+    }
+    .discipline__row-pct--bad   { color: #ff6b6b; }
+    .discipline__row-pct--good  { color: var(--cyan); }
+
+    .discipline__track {
+      width: 100%;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .discipline__fill {
+      height: 100%;
+      border-radius: 1px;
+      transition: width 0.6s ease;
+    }
+
+    .discipline__fill--bad {
+      width: 18%;
+      background: linear-gradient(90deg, #7f1d1d, var(--red));
+      box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
+    }
+
+    .discipline__fill--good {
+      width: 68%;
+      background: linear-gradient(90deg, var(--blue), var(--cyan));
+      box-shadow: 0 0 10px rgba(0, 180, 216, 0.5);
+    }
+
+    .discipline__callout {
+      margin-top: 22px;
+      display: flex;
+      gap: 10px;
+      padding: 11px 14px;
+      background: var(--cyan-dim);
+      border: 1px solid rgba(0, 180, 216, 0.14);
+      border-radius: var(--radius-inner);
+    }
+
+    .discipline__callout-arrow {
+      font-size: 0.85rem;
+      color: var(--cyan);
+      flex-shrink: 0;
+      line-height: 1.6;
+    }
+
+    .discipline__callout-body {
+      font-size: 0.71rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .discipline__callout-body strong {
+      color: var(--cyan);
+      font-weight: 800;
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       CARD 3 — AI VERDICT
+    ───────────────────────────────────────────────────────── */
+    .truth-card--verdict {
+      --_shimmer: rgba(0, 230, 118, 0.1);
+      border-bottom: 2px solid var(--green);
+      box-shadow:
+        0 0 60px rgba(0, 230, 118, 0.04),
+        inset 0 -1px 0 rgba(0, 230, 118, 0.16);
+    }
+
+    .verdict__badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 4px 10px;
+      background: rgba(0, 230, 118, 0.07);
+      border: 1px solid rgba(0, 230, 118, 0.2);
+      border-radius: var(--radius-inner);
+      margin-bottom: 20px;
+    }
+
+    .verdict__badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: dot-pulse 2.2s ease-in-out infinite;
+    }
+
+    @keyframes dot-pulse {
+      0%, 100% { opacity: 1;   transform: scale(1); }
+      50%       { opacity: 0.3; transform: scale(0.85); }
+    }
+
+    .verdict__badge-text {
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--green);
+    }
+
+    /* accent-border message block */
+    .verdict__message {
+      border-left: 3px solid var(--green);
+      padding: 13px 16px;
+      background: var(--green-dim);
+      border-radius: 0 var(--radius-inner) var(--radius-inner) 0;
+      margin-bottom: 20px;
+    }
+
+    .verdict__message-text {
+      font-size: 0.87rem;
+      font-weight: 400;
+      line-height: 1.7;
+      color: var(--text-primary);
+      font-style: italic;
+    }
+
+    .verdict__message-text strong {
+      color: var(--green);
+      font-style: normal;
+      font-weight: 800;
+    }
+
+    /* 2×2 metric grid */
+    .verdict__metrics {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .verdict__metric {
+      padding: 11px 13px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-dim);
+      border-radius: var(--radius-inner);
+    }
+
+    .verdict__metric-val {
+      font-size: 1.25rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.025em;
+      color: var(--green);
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+
+    .verdict__metric-key {
+      font-size: 0.59rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    /* ─────────────────────────────────────────────────────────
+       RESPONSIVE
+    ───────────────────────────────────────────────────────── */
+    @media (max-width: 920px) {
+      .truth-dashboard__grid {
+        grid-template-columns: 1fr;
+        max-width: 480px;
+        margin: 0 auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<section class="truth-dashboard" aria-label="Dashboard of Truth">
+
+  <header class="truth-dashboard__header">
+    <p class="truth-dashboard__eyebrow">Behavioral Analytics &middot; 30-Day Report</p>
+    <h1 class="truth-dashboard__title">Dashboard of Truth</h1>
+    <p class="truth-dashboard__subtitle">Son 30 günün sana karşı dürüst özeti.</p>
+  </header>
+
+  <div class="truth-dashboard__grid">
+
+    <!-- ══════════════════════════════════════════════════
+         CARD 1 · THE BLEED
+    ═══════════════════════════════════════════════════ -->
+    <article class="truth-card truth-card--bleed" aria-labelledby="bleed-heading">
+      <p class="truth-card__tag">The Bleed</p>
+
+      <div class="bleed__amount" id="bleed-heading" aria-label="Eksi 1240 dolar 50 sent">
+        -$1,240.50
+      </div>
+      <p class="bleed__caption">Revenge Trade Loss &mdash; Son 30 Gün</p>
+
+      <div class="bleed__divider" role="separator"></div>
+
+      <dl class="bleed__stats">
+        <div class="bleed__stat">
+          <dt class="bleed__stat-key">Revenge Trade Sayısı</dt>
+          <dd class="bleed__stat-val">14 işlem</dd>
+        </div>
+        <div class="bleed__stat">
+          <dt class="bleed__stat-key">Ort. Zarar / İşlem</dt>
+          <dd class="bleed__stat-val">-$88.61</dd>
+        </div>
+        <div class="bleed__stat">
+          <dt class="bleed__stat-key">Kazanma Oranı (Revenge)</dt>
+          <dd class="bleed__stat-val">21.4%</dd>
+        </div>
+      </dl>
+    </article>
+
+    <!-- ══════════════════════════════════════════════════
+         CARD 2 · DISCIPLINE ROI
+    ═══════════════════════════════════════════════════ -->
+    <article class="truth-card truth-card--discipline" aria-labelledby="discipline-heading">
+      <p class="truth-card__tag">Discipline ROI</p>
+      <p class="discipline__heading" id="discipline-heading">
+        AI Sinyali Uyumu &rarr; Getiri Farkı
+      </p>
+
+      <div class="discipline__row">
+        <div class="discipline__row-meta">
+          <span class="discipline__row-label discipline__row-label--bad">
+            AI Ignored Win Rate
+          </span>
+          <span class="discipline__row-pct discipline__row-pct--bad">18%</span>
+        </div>
+        <div class="discipline__track" role="progressbar" aria-valuenow="18" aria-valuemin="0" aria-valuemax="100">
+          <div class="discipline__fill discipline__fill--bad"></div>
+        </div>
+      </div>
+
+      <div class="discipline__row">
+        <div class="discipline__row-meta">
+          <span class="discipline__row-label discipline__row-label--good">
+            AI Followed Win Rate
+          </span>
+          <span class="discipline__row-pct discipline__row-pct--good">68%</span>
+        </div>
+        <div class="discipline__track" role="progressbar" aria-valuenow="68" aria-valuemin="0" aria-valuemax="100">
+          <div class="discipline__fill discipline__fill--good"></div>
+        </div>
+      </div>
+
+      <div class="discipline__callout" role="note">
+        <span class="discipline__callout-arrow" aria-hidden="true">&#8593;</span>
+        <p class="discipline__callout-body">
+          AI önerilerine uyduğunda kazanma oranın
+          <strong>+50 puan</strong> artıyor.
+          Disiplin bir maliyet değil, <strong>edge'in</strong> kendisi.
+        </p>
+      </div>
+    </article>
+
+    <!-- ══════════════════════════════════════════════════
+         CARD 3 · AI VERDICT
+    ═══════════════════════════════════════════════════ -->
+    <article class="truth-card truth-card--verdict" aria-labelledby="verdict-heading">
+      <p class="truth-card__tag">AI Verdict</p>
+
+      <div class="verdict__badge" role="status" aria-live="polite">
+        <span class="verdict__badge-dot" aria-hidden="true"></span>
+        <span class="verdict__badge-text">Live Analysis</span>
+      </div>
+
+      <blockquote class="verdict__message">
+        <p class="verdict__message-text" id="verdict-heading">
+          Son 30 günde yaptığın <strong>14 intikam işlemi</strong>
+          seni hesap büyümesinden koparttı. Zararın ardından açtığın
+          pozisyonların <strong>%78.6'sı başarısız oldu.</strong>
+          Duygusal tetikleyicini kontrol etmeden piyasaya girmen,
+          sermayeni değil&nbsp;<strong>psikolojini tasfiye ediyor.</strong>
+        </p>
+      </blockquote>
+
+      <dl class="verdict__metrics">
+        <div class="verdict__metric">
+          <dt class="verdict__metric-key">Revenge Fail Rate</dt>
+          <dd class="verdict__metric-val">78.6%</dd>
+        </div>
+        <div class="verdict__metric">
+          <dt class="verdict__metric-key">Emotional Entries</dt>
+          <dd class="verdict__metric-val">14</dd>
+        </div>
+        <div class="verdict__metric">
+          <dt class="verdict__metric-key">Avg Entry Loss</dt>
+          <dd class="verdict__metric-val">-$89</dd>
+        </div>
+        <div class="verdict__metric">
+          <dt class="verdict__metric-key">Risk Score</dt>
+          <dd class="verdict__metric-val">9.2<span style="font-size:0.6rem;font-weight:500;color:var(--text-muted)">/10</span></dd>
+        </div>
+      </dl>
+    </article>
+
+  </div><!-- /.truth-dashboard__grid -->
+
+</section><!-- /.truth-dashboard -->
+
+<script>
+  (async () => {
+    // JWT token'ı localStorage'dan al (WhaleTracker standart formatı)
+    const stored = localStorage.getItem('user');
+    if (!stored) return;
+
+    let token, userId;
+    try {
+      const parsed = JSON.parse(stored);
+      token  = parsed.token;
+      userId = parsed.id;
+    } catch {
+      return;
+    }
+    if (!token || !userId) return;
+
+    let data;
+    try {
+      const res = await fetch(`/api/v1/dashboard-stats/${userId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;          // yetkisiz veya sunucu hatası — statik değerler kalır
+      data = await res.json();
+    } catch {
+      return;                        // ağ hatası — statik değerler kalır
+    }
+
+    // ── CARD 1: The Bleed ──────────────────────────────────────────────────
+    const lossEl = document.getElementById('bleed-heading');
+    if (lossEl && data.revenge_loss != null) {
+      const fmt = new Intl.NumberFormat('en-US', {
+        style: 'currency', currency: 'USD',
+        minimumFractionDigits: 2, maximumFractionDigits: 2,
+      });
+      const val  = parseFloat(data.revenge_loss);
+      lossEl.textContent = val <= 0 ? fmt.format(val) : `+${fmt.format(val)}`;
+      lossEl.setAttribute('aria-label', `${val <= 0 ? 'Eksi' : 'Artı'} ${Math.abs(val)} dolar`);
+    }
+
+    // ── CARD 2: Discipline ROI ─────────────────────────────────────────────
+    const highPct = data.high_psy_win_rate;
+    const lowPct  = data.low_psy_win_rate;
+
+    if (lowPct != null) {
+      document.querySelector('.discipline__row-pct--bad').textContent   = `${lowPct}%`;
+      document.querySelector('.discipline__fill--bad').style.width      = `${Math.min(lowPct, 100)}%`;
+      document.querySelector('[aria-valuenow="18"]')?.setAttribute('aria-valuenow', lowPct);
+    }
+    if (highPct != null) {
+      document.querySelector('.discipline__row-pct--good').textContent  = `${highPct}%`;
+      document.querySelector('.discipline__fill--good').style.width     = `${Math.min(highPct, 100)}%`;
+      document.querySelector('[aria-valuenow="68"]')?.setAttribute('aria-valuenow', highPct);
+    }
+    if (highPct != null && lowPct != null) {
+      const diff = (highPct - lowPct).toFixed(1);
+      document.querySelector('.discipline__callout-body').innerHTML =
+        `AI önerilerine uyduğunda kazanma oranın <strong>+${diff} puan</strong> artıyor. Disiplin bir maliyet değil, <strong>edge'in</strong> kendisi.`;
+    }
+
+    // ── CARD 3: AI Verdict ─────────────────────────────────────────────────
+    const feedbackEl = document.getElementById('verdict-heading');
+    if (feedbackEl && data.latest_feedback) {
+      feedbackEl.textContent = data.latest_feedback;
+    }
+  })();
+</script>
+
+</body>
+</html>

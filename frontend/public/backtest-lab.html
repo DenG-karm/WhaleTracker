@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BacktestLab · Infinite Replay</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lightweight-charts@4.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0A0E17;
+      --bg-card:  rgba(13,18,30,0.95);
+      --bg-panel: rgba(10,14,23,0.98);
+      --border:   rgba(255,255,255,0.07);
+      --border2:  rgba(255,255,255,0.13);
+      --cyan:     #22d3ee;
+      --gold:     #fbbf24;
+      --up:       #00ff9d;
+      --down:     #ff3366;
+      --text:     #e2e8f0;
+      --muted:    rgba(255,255,255,0.38);
+      --mono:     'ui-monospace','Cascadia Code','Fira Code',monospace;
+    }
+
+    html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif; }
+
+    /* ─── Layout ─────────────────────────────────────────────────────────── */
+    #app { height: 100vh; display: grid; grid-template-rows: 52px 1fr; overflow: hidden; }
+
+    /* ─── TopBar ─────────────────────────────────────────────────────────── */
+    #topbar {
+      display: flex; align-items: center; padding: 0 10px; gap: 2px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8,12,20,0.97);
+      backdrop-filter: blur(12px); z-index: 100; user-select: none;
+    }
+
+    .tb-brand { display: flex; align-items: center; gap: 8px; padding-right: 2px; }
+    .tb-brand svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .tb-brand-name { font-size: 0.82rem; font-weight: 800; letter-spacing: -0.01em; }
+    .tb-brand-tag  { font-size: 0.6rem; color: var(--cyan); font-weight: 700;
+      background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.25);
+      padding: 1px 5px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+    .tb-sep { width: 1px; height: 22px; background: var(--border); margin: 0 7px; flex-shrink: 0; }
+
+    .tb-pair-wrap { position: relative; display: flex; align-items: center; }
+    #symbol-select {
+      appearance: none; background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border); color: var(--text);
+      font-family: inherit; font-size: 0.82rem; font-weight: 700;
+      padding: 5px 26px 5px 10px; border-radius: 7px; cursor: pointer; outline: none;
+      min-width: 108px; transition: border-color 0.15s, background 0.15s;
+    }
+    #symbol-select:hover  { border-color: var(--border2); background: rgba(255,255,255,0.06); }
+    #symbol-select:focus  { border-color: var(--cyan); }
+    .tb-pair-caret { position: absolute; right: 8px; pointer-events: none; color: var(--muted); font-size: 0.55rem; }
+
+    .tb-tf { display: flex; gap: 1px; }
+    .tf-btn {
+      padding: 4px 9px; border-radius: 5px; font-size: 0.72rem; font-weight: 600;
+      border: 1px solid transparent; background: transparent; color: var(--muted);
+      cursor: pointer; transition: all 0.14s;
+    }
+    .tf-btn:hover  { color: var(--text); background: rgba(255,255,255,0.05); }
+    .tf-btn.active { color: var(--cyan); background: rgba(34,211,238,0.12); border-color: rgba(34,211,238,0.25); }
+
+    .tb-replay { display: flex; align-items: center; gap: 3px; }
+    .rep-btn {
+      width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+      border-radius: 7px; border: 1px solid var(--border); background: rgba(255,255,255,0.04);
+      color: var(--text); cursor: pointer; font-size: 0.75rem; transition: all 0.14s;
+    }
+    .rep-btn:hover    { border-color: var(--border2); background: rgba(255,255,255,0.08); }
+    #btn-play.active  { background: rgba(34,211,238,0.14); border-color: rgba(34,211,238,0.4); color: var(--cyan); }
+    #speed-select {
+      appearance: none; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      color: var(--muted); font-family: var(--mono); font-size: 0.72rem; font-weight: 600;
+      padding: 5px 9px; border-radius: 5px; cursor: pointer; outline: none;
+    }
+
+    .tb-spacer { flex: 1; }
+
+    .tb-buffer { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 0 6px; }
+    .tb-buffer-label { font-size: 0.58rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+    .tb-buffer-track { width: 64px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 2px; overflow: hidden; }
+    #buffer-bar { height: 100%; width: 0%; border-radius: 2px; transition: width 0.4s ease, background-color 0.3s; background: var(--cyan); }
+    #buffer-bar.warn { background: var(--gold); }
+    #buffer-bar.crit { background: var(--down); }
+
+    .tb-acct { display: flex; align-items: center; }
+    .acct-item { display: flex; flex-direction: column; gap: 1px; padding: 0 10px; }
+    .acct-lbl { font-size: 0.6rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; }
+    .acct-val { font-size: 0.86rem; font-weight: 800; font-family: var(--mono); }
+    .acct-pnl { font-size: 0.78rem; font-weight: 700; font-family: var(--mono); }
+    .up   { color: var(--up);   }
+    .down { color: var(--down); }
+
+    #btn-end {
+      padding: 5px 13px; border-radius: 7px; font-size: 0.75rem; font-weight: 700;
+      border: 1px solid rgba(255,51,102,0.35); background: rgba(255,51,102,0.08);
+      color: var(--down); cursor: pointer; transition: background 0.14s; white-space: nowrap;
+    }
+    #btn-end:hover { background: rgba(255,51,102,0.18); }
+
+    /* ─── Main ───────────────────────────────────────────────────────────── */
+    #main { display: grid; grid-template-columns: 1fr 276px; overflow: hidden; }
+
+    #chart-wrap { position: relative; overflow: hidden; }
+    #chart { width: 100%; height: 100%; }
+
+    #ohlc-bar {
+      position: absolute; top: 10px; left: 12px; display: flex; gap: 14px;
+      font-family: var(--mono); font-size: 0.72rem; pointer-events: none;
+    }
+    .ohlc-item { display: flex; flex-direction: column; gap: 1px; }
+    .ohlc-item .ol { font-size: 0.58rem; color: var(--muted); text-transform: uppercase; }
+    .ohlc-item .ov { font-weight: 700; }
+    #ohlc-o, #ohlc-c { color: var(--text); }
+    #ohlc-h { color: var(--up);   }
+    #ohlc-l { color: var(--down); }
+
+    #candle-time {
+      position: absolute; top: 10px; right: 12px; font-size: 0.68rem; color: var(--muted);
+      font-family: var(--mono); pointer-events: none;
+    }
+
+    #loading {
+      position: absolute; inset: 0; background: rgba(10,14,23,0.93);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 14px; z-index: 40; transition: opacity 0.25s;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--cyan);
+      border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading-msg { font-size: 0.88rem; font-weight: 700; }
+    #loading-sub { font-size: 0.72rem; color: var(--muted); }
+
+    /* ─── Side Panel ─────────────────────────────────────────────────────── */
+    #side { border-left: 1px solid var(--border); background: var(--bg-panel); display: flex; flex-direction: column; overflow: hidden; }
+
+    .panel-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .p-tab {
+      flex: 1; padding: 10px 0; font-size: 0.72rem; font-weight: 600;
+      text-align: center; color: var(--muted); cursor: pointer;
+      border-bottom: 2px solid transparent; transition: all 0.14s;
+    }
+    .p-tab.active { color: var(--cyan); border-bottom-color: var(--cyan); }
+
+    .tab-body {
+      flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px;
+      scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent;
+    }
+    .tab-body::-webkit-scrollbar { width: 3px; }
+    .tab-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    .price-box { text-align: center; padding: 10px; background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border); border-radius: 9px; margin-bottom: 10px; }
+    .price-box .pb-label { font-size: 0.6rem; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.08em; margin-bottom: 2px; }
+    #cur-price { font-size: 1.28rem; font-weight: 800; font-family: var(--mono); }
+
+    .fg { margin-bottom: 9px; }
+    .fg label { display: block; font-size: 0.65rem; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.07em; margin-bottom: 4px; }
+    .fi { width: 100%; background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+      border-radius: 7px; color: var(--text); font-family: var(--mono); font-size: 0.82rem;
+      padding: 7px 10px; outline: none; transition: border-color 0.14s; }
+    .fi:focus { border-color: var(--cyan); }
+
+    .trade-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 2px 0 4px; }
+    .btn-long, .btn-short {
+      padding: 10px 0; border-radius: 8px; font-size: 0.82rem; font-weight: 800;
+      cursor: pointer; transition: background 0.14s;
+    }
+    .btn-long  { border: 1px solid rgba(0,255,157,0.3);  background: rgba(0,255,157,0.12);  color: var(--up); }
+    .btn-short { border: 1px solid rgba(255,51,102,0.3); background: rgba(255,51,102,0.12); color: var(--down); }
+    .btn-long:hover  { background: rgba(0,255,157,0.22); }
+    .btn-short:hover { background: rgba(255,51,102,0.22); }
+    .btn-long:disabled, .btn-short:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .pos-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 9px; padding: 10px; margin-bottom: 8px; }
+    .pos-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .pos-badge { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; }
+    .pos-badge.lng { background: rgba(0,255,157,0.12);  color: var(--up); }
+    .pos-badge.sht { background: rgba(255,51,102,0.12); color: var(--down); }
+    .pos-pnl  { font-size: 0.82rem; font-weight: 800; font-family: var(--mono); }
+    .pos-meta { font-size: 0.68rem; color: var(--muted); }
+    .pos-sltp { font-size: 0.68rem; margin-top: 3px; }
+    .btn-close-pos {
+      width: 100%; margin-top: 7px; padding: 5px; border-radius: 6px; font-size: 0.72rem;
+      font-weight: 600; border: 1px solid var(--border); background: rgba(255,255,255,0.03);
+      color: var(--muted); cursor: pointer; transition: all 0.14s;
+    }
+    .btn-close-pos:hover { border-color: var(--down); color: var(--down); background: rgba(255,51,102,0.08); }
+
+    .trade-row { padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: 0.72rem; }
+    .trade-row-head { display: flex; justify-content: space-between; align-items: center; }
+    .trade-sym { font-weight: 700; }
+    .trade-pnl { font-weight: 700; font-family: var(--mono); }
+
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+    .stat-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px; text-align: center; }
+    .sc-lbl { font-size: 0.6rem; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.07em; margin-bottom: 4px; }
+    .sc-val { font-size: 0.9rem; font-weight: 800; font-family: var(--mono); }
+
+    .empty { text-align: center; padding: 28px 12px; color: var(--muted); font-size: 0.78rem; }
+
+    /* ─── Toast ──────────────────────────────────────────────────────────── */
+    #toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+      padding: 9px 18px; border-radius: 8px; font-size: 0.82rem; font-weight: 600;
+      pointer-events: none; z-index: 500; opacity: 0; transition: opacity 0.2s; white-space: nowrap;
+    }
+    #toast.show   { opacity: 1; }
+    #toast.info   { background: rgba(34,211,238,0.15); border: 1px solid rgba(34,211,238,0.3); color: var(--cyan); }
+    #toast.profit { background: rgba(0,255,157,0.15);  border: 1px solid rgba(0,255,157,0.3);  color: var(--up); }
+    #toast.loss   { background: rgba(255,51,102,0.15); border: 1px solid rgba(255,51,102,0.3); color: var(--down); }
+
+    /* ─── End Modal ──────────────────────────────────────────────────────── */
+    #end-modal {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.72); display: flex;
+      align-items: center; justify-content: center; z-index: 600;
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    #end-modal.show { opacity: 1; pointer-events: all; }
+    .modal-box { background: var(--bg-card); border: 1px solid var(--border2);
+      border-radius: 16px; padding: 28px; width: 340px; backdrop-filter: blur(20px); }
+    .modal-title { font-size: 1rem; font-weight: 800; margin-bottom: 5px; }
+    .modal-sub   { font-size: 0.78rem; color: var(--muted); margin-bottom: 20px; }
+    .modal-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 8px; margin-bottom: 20px; }
+    .ms-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+      border-radius: 8px; padding: 9px; text-align: center; }
+    .ms-lbl { font-size: 0.6rem; color: var(--muted); text-transform: uppercase;
+      letter-spacing: 0.07em; margin-bottom: 4px; }
+    .ms-val { font-size: 0.88rem; font-weight: 800; font-family: var(--mono); }
+    .modal-actions { display: flex; gap: 8px; }
+    .btn-cancel  { flex: 1; padding: 10px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
+      border: 1px solid var(--border); background: rgba(255,255,255,0.03); color: var(--muted); cursor: pointer; }
+    .btn-confirm { flex: 2; padding: 10px; border-radius: 8px; font-size: 0.82rem; font-weight: 800;
+      border: 1px solid rgba(255,51,102,0.35); background: rgba(255,51,102,0.1); color: var(--down); cursor: pointer; }
+    .btn-confirm:hover { background: rgba(255,51,102,0.2); }
+
+    select option { background: #0d121e; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ═══════════════════════════ TOP BAR ═══════════════════════════════════ -->
+  <div id="topbar">
+    <!-- Brand -->
+    <div class="tb-brand">
+      <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M2 16l5-6 3.5 3.5 5-7.5 4.5 5" stroke="#22d3ee" stroke-width="1.8"
+              stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="2"  cy="16" r="1.8" fill="#22d3ee"/>
+        <circle cx="20" cy="11" r="1.8" fill="#22d3ee"/>
+      </svg>
+      <div class="tb-brand-name">BacktestLab</div>
+      <span class="tb-brand-tag">Infinite Replay</span>
+    </div>
+
+    <div class="tb-sep"></div>
+
+    <!-- Pair selector -->
+    <div class="tb-pair-wrap">
+      <select id="symbol-select">
+        <optgroup label="── Crypto ──">
+          <option value="BTCUSDT" selected>BTC / USDT</option>
+          <option value="ETHUSDT">ETH / USDT</option>
+          <option value="SOLUSDT">SOL / USDT</option>
+          <option value="BNBUSDT">BNB / USDT</option>
+          <option value="XRPUSDT">XRP / USDT</option>
+          <option value="AVAXUSDT">AVAX / USDT</option>
+          <option value="DOGEUSDT">DOGE / USDT</option>
+        </optgroup>
+      </select>
+      <span class="tb-pair-caret">&#9660;</span>
+    </div>
+
+    <div class="tb-sep"></div>
+
+    <!-- Timeframe buttons -->
+    <div class="tb-tf">
+      <button class="tf-btn" data-tf="1m">1m</button>
+      <button class="tf-btn" data-tf="5m">5m</button>
+      <button class="tf-btn" data-tf="15m">15m</button>
+      <button class="tf-btn active" data-tf="1h">1h</button>
+      <button class="tf-btn" data-tf="4h">4h</button>
+      <button class="tf-btn" data-tf="1d">1d</button>
+    </div>
+
+    <div class="tb-sep"></div>
+
+    <!-- Replay controls -->
+    <div class="tb-replay">
+      <button class="rep-btn" id="btn-step-back" title="Geri (Sol Ok)">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor">
+          <rect x="0" y="2" width="3" height="9" rx="1"/>
+          <polygon points="13,2 5,6.5 13,11"/>
+        </svg>
+      </button>
+      <button class="rep-btn" id="btn-play" title="Oynat / Duraklat (Space)">
+        <svg id="ico-play" width="11" height="12" viewBox="0 0 11 12" fill="currentColor">
+          <polygon points="1.5,1 10,6 1.5,11"/>
+        </svg>
+        <svg id="ico-pause" width="11" height="12" viewBox="0 0 11 12" fill="currentColor" style="display:none">
+          <rect x="1" y="1.5" width="3.5" height="9" rx="1"/>
+          <rect x="6.5" y="1.5" width="3.5" height="9" rx="1"/>
+        </svg>
+      </button>
+      <button class="rep-btn" id="btn-step-fwd" title="İleri (Sag Ok)">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="currentColor">
+          <polygon points="0,2 8,6.5 0,11"/>
+          <rect x="10" y="2" width="3" height="9" rx="1"/>
+        </svg>
+      </button>
+      <select id="speed-select" title="Oynatma Hizi">
+        <option value="1">x1</option>
+        <option value="3">x3</option>
+        <option value="5">x5</option>
+        <option value="10">x10</option>
+        <option value="20">x20</option>
+      </select>
+    </div>
+
+    <div class="tb-spacer"></div>
+
+    <!-- Buffer bar -->
+    <div class="tb-buffer" title="Replay tamponu doluluk orani">
+      <div class="tb-buffer-label">Buffer</div>
+      <div class="tb-buffer-track"><div id="buffer-bar"></div></div>
+    </div>
+
+    <div class="tb-sep"></div>
+
+    <!-- Account info -->
+    <div class="tb-acct">
+      <div class="acct-item">
+        <div class="acct-lbl">Bakiye</div>
+        <div class="acct-val" id="disp-equity">$10,000.00</div>
+      </div>
+      <div class="tb-sep"></div>
+      <div class="acct-item">
+        <div class="acct-lbl">P&amp;L</div>
+        <div class="acct-pnl" id="disp-pnl">+-$0.00</div>
+      </div>
+      <div class="tb-sep"></div>
+      <div class="acct-item">
+        <div class="acct-lbl">Islem</div>
+        <div class="acct-val" id="disp-trades">0</div>
+      </div>
+    </div>
+
+    <div class="tb-sep"></div>
+    <button id="btn-end">Bitir</button>
+  </div>
+
+  <!-- ═══════════════════════════ MAIN ══════════════════════════════════════ -->
+  <div id="main">
+    <!-- Chart area -->
+    <div id="chart-wrap">
+      <div id="chart"></div>
+
+      <!-- OHLC overlay -->
+      <div id="ohlc-bar">
+        <div class="ohlc-item"><span class="ol">O</span><span class="ov" id="ohlc-o">--</span></div>
+        <div class="ohlc-item"><span class="ol">H</span><span class="ov" id="ohlc-h">--</span></div>
+        <div class="ohlc-item"><span class="ol">L</span><span class="ov" id="ohlc-l">--</span></div>
+        <div class="ohlc-item"><span class="ol">C</span><span class="ov" id="ohlc-c">--</span></div>
+      </div>
+      <div id="candle-time"></div>
+
+      <!-- Loading overlay -->
+      <div id="loading">
+        <div class="spinner"></div>
+        <div id="loading-msg">Yukleniyor...</div>
+        <div id="loading-sub">Binance API'den veriler cekiliyor</div>
+      </div>
+    </div>
+
+    <!-- Side panel -->
+    <div id="side">
+      <div class="panel-tabs">
+        <div class="p-tab active" data-tab="trade">Islem</div>
+        <div class="p-tab" data-tab="positions">Pozisyon</div>
+        <div class="p-tab" data-tab="history">Gecmis</div>
+      </div>
+
+      <!-- Trade tab -->
+      <div class="tab-body" id="tab-trade">
+        <div class="price-box">
+          <div class="pb-label">Guncel Fiyat</div>
+          <div id="cur-price">--</div>
+        </div>
+        <div class="fg">
+          <label>Lot / Kontrat</label>
+          <input type="number" class="fi" id="inp-lot" value="0.1" min="0.001" step="0.001" />
+        </div>
+        <div class="fg">
+          <label>Risk $ (SL mesafesinden hesapla)</label>
+          <input type="number" class="fi" id="inp-risk" placeholder="Opsiyonel" min="0" step="1" />
+        </div>
+        <div class="fg">
+          <label>Stop Loss</label>
+          <input type="number" class="fi" id="inp-sl" placeholder="Fiyat -- opsiyonel" step="any" />
+        </div>
+        <div class="fg">
+          <label>Take Profit</label>
+          <input type="number" class="fi" id="inp-tp" placeholder="Fiyat -- opsiyonel" step="any" />
+        </div>
+        <div class="trade-btns">
+          <button class="btn-long"  id="btn-long"  onclick="openPos('BUY')">LONG</button>
+          <button class="btn-short" id="btn-short" onclick="openPos('SELL')">SHORT</button>
+        </div>
+      </div>
+
+      <!-- Positions tab -->
+      <div class="tab-body" id="tab-positions" style="display:none">
+        <div id="pos-list"><div class="empty">Acik pozisyon yok</div></div>
+      </div>
+
+      <!-- History tab -->
+      <div class="tab-body" id="tab-history" style="display:none">
+        <div class="stat-grid">
+          <div class="stat-card"><div class="sc-lbl">Kazanma %</div><div class="sc-val" id="st-wr">--</div></div>
+          <div class="stat-card"><div class="sc-lbl">Toplam PnL</div><div class="sc-val" id="st-pnl">$0</div></div>
+          <div class="stat-card"><div class="sc-lbl">En Iyi</div><div class="sc-val up" id="st-best">--</div></div>
+          <div class="stat-card"><div class="sc-lbl">En Kotu</div><div class="sc-val down" id="st-worst">--</div></div>
+        </div>
+        <div id="trade-list"><div class="empty">Henuz kapatilmis islem yok</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- End session modal -->
+<div id="end-modal">
+  <div class="modal-box">
+    <div class="modal-title">Oturumu Bitir</div>
+    <div class="modal-sub">Acik pozisyonlar anlik fiyattan kapatilacak.</div>
+    <div class="modal-stats" id="modal-stats"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel"  onclick="closeModal()">Devam Et</button>
+      <button class="btn-confirm" onclick="confirmEnd()">Kaydet &amp; Cik</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════════════
+     JAVASCRIPT - Continuous Buffering Replay Engine
+     ═══════════════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+// ─── Config ──────────────────────────────────────────────────────────────────
+const BUFFER_THRESHOLD = 50;    // Fetch more when buffer drops below this
+const FETCH_BATCH      = 500;   // Candles per background fetch
+const HISTORY_CANDLES  = 800;   // Initial history painted on chart
+const START_BALANCE    = 10000;
+
+// Auto-detect backend: direct in dev (port 3000), same-origin in prod
+const BACKEND = (window.location.port === '3000' || window.location.port === '3001')
+  ? 'http://localhost:8000'
+  : '';
+
+const TF_MS = { '1m':60e3,'5m':300e3,'15m':900e3,'1h':3600e3,'4h':14400e3,'1d':86400e3 };
+
+const PAIR_LABELS = {
+  BTCUSDT:'BTC/USDT', ETHUSDT:'ETH/USDT', SOLUSDT:'SOL/USDT', BNBUSDT:'BNB/USDT',
+  XRPUSDT:'XRP/USDT', AVAXUSDT:'AVAX/USDT', DOGEUSDT:'DOGE/USDT',
+};
+const PAIR_DEC = {
+  BTCUSDT:2, ETHUSDT:2, SOLUSDT:3, BNBUSDT:2, XRPUSDT:5, AVAXUSDT:3, DOGEUSDT:5,
+};
+
+// ─── Mutable state ───────────────────────────────────────────────────────────
+let sym          = 'BTCUSDT';
+let tf           = '1h';
+let replayData   = [];    // ← THE BUFFER: candles waiting to be revealed one by one
+let lastBufMs    = 0;     // ms timestamp of the last candle already in buffer
+let isLoadingBuf = false;
+let isPlaying    = false;
+let replaySpeed  = 1;
+let replayTimer  = null;
+let balance      = START_BALANCE;
+let positions    = [];
+let trades       = [];
+let posSeq       = 0;
+
+// ─── Chart init ──────────────────────────────────────────────────────────────
+const chartEl = document.getElementById('chart');
+const chart   = LightweightCharts.createChart(chartEl, {
+  layout:          { background: { type: 'solid', color: '#0A0E17' }, textColor: 'rgba(255,255,255,0.45)' },
+  grid:            { vertLines: { color: 'rgba(255,255,255,0.04)' }, horzLines: { color: 'rgba(255,255,255,0.04)' } },
+  crosshair:       { mode: LightweightCharts.CrosshairMode.Normal },
+  rightPriceScale: { borderColor: 'rgba(255,255,255,0.07)' },
+  timeScale:       { borderColor: 'rgba(255,255,255,0.07)', timeVisible: true, secondsVisible: false },
+  handleScroll: true, handleScale: true,
+});
+const series = chart.addCandlestickSeries({
+  upColor: '#00ff9d', downColor: '#ff3366',
+  borderUpColor: '#00ff9d', borderDownColor: '#ff3366',
+  wickUpColor: '#00ff9d', wickDownColor: '#ff3366',
+});
+
+chart.subscribeCrosshairMove(function(p) {
+  if (!p || !p.seriesData || !p.seriesData.size) return;
+  var d = p.seriesData.get(series);
+  if (!d) return;
+  var dec = PAIR_DEC[sym] || 2;
+  document.getElementById('ohlc-o').textContent = d.open  != null ? d.open.toFixed(dec)  : '--';
+  document.getElementById('ohlc-h').textContent = d.high  != null ? d.high.toFixed(dec)  : '--';
+  document.getElementById('ohlc-l').textContent = d.low   != null ? d.low.toFixed(dec)   : '--';
+  document.getElementById('ohlc-c').textContent = d.close != null ? d.close.toFixed(dec) : '--';
+});
+
+new ResizeObserver(function() {
+  chart.resize(chartEl.offsetWidth, chartEl.offsetHeight);
+}).observe(chartEl);
+
+// ─── Data fetch helper ────────────────────────────────────────────────────────
+async function fetchCandles(opts) {
+  var p = new URLSearchParams({
+    symbol: opts.symbol, interval: opts.interval,
+    limit: String(opts.limit || FETCH_BATCH),
+  });
+  if (opts.startTime) p.set('startTime', String(opts.startTime));
+  if (opts.endTime)   p.set('endTime',   String(opts.endTime));
+  var res = await fetch(BACKEND + '/api/proxy/binance/klines?' + p);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  var raw = await res.json();
+  return raw.map(function(k) {
+    return {
+      time:   Math.floor(k[0] / 1000),  // seconds for LightweightCharts
+      open:   parseFloat(k[1]),
+      high:   parseFloat(k[2]),
+      low:    parseFloat(k[3]),
+      close:  parseFloat(k[4]),
+      volume: parseFloat(k[5]),
+      _ms:    Number(k[0]),              // milliseconds kept as pagination cursor
+    };
+  });
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+//  CONTINUOUS BUFFERING
+//  replayData kuyrugunu asenkron olarak doldurur.
+//  Bu fonksiyon cagrildiginda replay hic durmaz - arkaplanda yukleme yapar.
+// ════════════════════════════════════════════════════════════════════════════
+async function fetchBufferBatch() {
+  if (isLoadingBuf || lastBufMs === 0) return;
+  isLoadingBuf = true;
+  updateBufBar();
+
+  try {
+    var batch = await fetchCandles({
+      symbol:    sym,
+      interval:  tf,
+      startTime: lastBufMs + 1,  // +1ms: bir onceki son mumla cakismayi onler
+      limit:     FETCH_BATCH,
+    });
+    if (batch.length > 0) {
+      replayData.push.apply(replayData, batch);
+      lastBufMs = batch[batch.length - 1]._ms;
+    }
+  } catch (e) {
+    console.warn('[Buffer] fetch failed:', e.message);
+  } finally {
+    isLoadingBuf = false;
+    updateBufBar();
+  }
+}
+
+// ─── Replay tick (setInterval tarafindan cagrilir) ────────────────────────────
+function replayTick() {
+  // Buffer bosaldiysa: replay durmaz, sessizce bekler ve yeni veri ister
+  if (replayData.length === 0) {
+    if (!isLoadingBuf) fetchBufferBatch();
+    return;
+  }
+
+  var c = replayData.shift();  // buffer'dan bir sonraki mumu al
+
+  // Grafige bas - update() yeni mum ekler veya mevcudu gunceller
+  series.update({ time: c.time, open: c.open, high: c.high, low: c.low, close: c.close });
+
+  // Overlay'leri guncelle
+  var dec = PAIR_DEC[sym] || 2;
+  document.getElementById('ohlc-o').textContent    = c.open.toFixed(dec);
+  document.getElementById('ohlc-h').textContent    = c.high.toFixed(dec);
+  document.getElementById('ohlc-l').textContent    = c.low.toFixed(dec);
+  document.getElementById('ohlc-c').textContent    = c.close.toFixed(dec);
+  document.getElementById('cur-price').textContent = c.close.toFixed(dec);
+
+  var d = new Date(c.time * 1000);
+  document.getElementById('candle-time').textContent =
+    d.toLocaleDateString('tr-TR') + ' ' + d.toLocaleTimeString('tr-TR', { hour:'2-digit', minute:'2-digit' });
+
+  // SL/TP kontrolu
+  checkPositions(c);
+  updateAccountUI();
+
+  // ── KRITIK: buffer esige dusmeden once asenkron fetch tetikle ──────────
+  if (replayData.length < BUFFER_THRESHOLD && !isLoadingBuf) {
+    fetchBufferBatch();  // await yok - replay setInterval kesilmeden devam eder
+  }
+  updateBufBar();
+}
+
+// ─── Play / Pause ─────────────────────────────────────────────────────────────
+function setPlaying(val) {
+  isPlaying = val;
+  clearInterval(replayTimer);
+  replayTimer = null;
+  if (isPlaying) {
+    var delay = Math.max(50, Math.round(1000 / replaySpeed));
+    replayTimer = setInterval(replayTick, delay);
+  }
+  document.getElementById('ico-play').style.display  = isPlaying ? 'none' : '';
+  document.getElementById('ico-pause').style.display = isPlaying ? ''     : 'none';
+  document.getElementById('btn-play').classList.toggle('active', isPlaying);
+}
+
+function stepFwd()  { if (isPlaying) setPlaying(false); replayTick(); }
+function stepBack() { showToast('Geri adim desteklenmiyor', 'info'); }
+
+// ════════════════════════════════════════════════════════════════════════════
+//  RESET BACKTEST
+//  Parite veya zaman dilimi degistiginde tam sifirlama yapar:
+//  replay durdurulur, buffer temizlenir, trading sifirlanir, yeni veri cekilir.
+// ════════════════════════════════════════════════════════════════════════════
+async function resetBacktest() {
+  // 1. Replay'i durdur
+  setPlaying(false);
+
+  // 2. Buffer durumunu temizle
+  replayData   = [];
+  lastBufMs    = 0;
+  isLoadingBuf = false;
+  updateBufBar();
+
+  // 3. Ticaret durumunu sifirla
+  balance   = START_BALANCE;
+  positions = [];
+  trades    = [];
+  updateAccountUI();
+  renderPositions();
+  renderTrades();
+
+  // 4. Yukleme ekranini goster
+  showLoading(true,
+    (PAIR_LABELS[sym] || sym) + ' -- ' + tf + ' yukleniyor...',
+    'Binance proxy uzerinden gecmis veriler cekiliyor'
+  );
+
+  try {
+    // 5. Tarihsel veri bitis zamanini hesapla:
+    //    Simdi'den FETCH_BATCH kadar interval geriye git.
+    //    Bu, buffer'in hemen dolmasini ve replay'in aninda baslayabilmesini saglar.
+    var intervalMs = TF_MS[tf] || 3600e3;
+    var histEndMs  = Date.now() - (FETCH_BATCH + 50) * intervalMs;
+
+    // 6. Grafige baslangic olarak HISTORY_CANDLES mum cek
+    var history = await fetchCandles({
+      symbol: sym, interval: tf,
+      endTime: histEndMs, limit: HISTORY_CANDLES,
+    });
+    if (history.length < 2) throw new Error('Veri yetersiz - baska parite/TF deneyin');
+
+    // 7. Tum geçmisi grafige boyat (setData)
+    series.setData(history.map(function(c) {
+      return { time: c.time, open: c.open, high: c.high, low: c.low, close: c.close };
+    }));
+    chart.timeScale().fitContent();
+
+    // 8. Buffer imlecini son gecmis mumuna baslat
+    lastBufMs = history[history.length - 1]._ms;
+
+    // 9. Ilk buffer yuklemesini hemen yap - kullanici Play'e basinca hazir olsun
+    await fetchBufferBatch();
+
+    // 10. Overlay'leri guncelle
+    var last = history[history.length - 1];
+    var dec  = PAIR_DEC[sym] || 2;
+    document.getElementById('cur-price').textContent = last.close.toFixed(dec);
+    document.getElementById('ohlc-o').textContent = last.open.toFixed(dec);
+    document.getElementById('ohlc-h').textContent = last.high.toFixed(dec);
+    document.getElementById('ohlc-l').textContent = last.low.toFixed(dec);
+    document.getElementById('ohlc-c').textContent = last.close.toFixed(dec);
+
+    showToast(history.length + ' mum yuklendi, ' + replayData.length + ' mum hazir', 'info');
+
+  } catch (e) {
+    console.error('[Reset]', e);
+    showToast('Hata: ' + e.message, 'loss');
+  } finally {
+    showLoading(false);
+  }
+}
+
+// ─── Buffer bar ───────────────────────────────────────────────────────────────
+function updateBufBar() {
+  var bar   = document.getElementById('buffer-bar');
+  var ratio = Math.min(replayData.length / FETCH_BATCH, 1);
+  bar.style.width = (ratio * 100).toFixed(1) + '%';
+  bar.className   = ratio < 0.1 ? 'crit' : ratio < 0.3 ? 'warn' : '';
+}
+
+// ─── Trading engine ───────────────────────────────────────────────────────────
+function openPos(side) {
+  var priceStr = document.getElementById('cur-price').textContent;
+  var price    = parseFloat(priceStr);
+  if (!price || isNaN(price)) { showToast('Once replay baslatın', 'info'); return; }
+
+  var lot     = parseFloat(document.getElementById('inp-lot').value)  || 0.1;
+  var riskUsd = parseFloat(document.getElementById('inp-risk').value) || 0;
+  var sl      = parseFloat(document.getElementById('inp-sl').value)   || 0;
+  var tp      = parseFloat(document.getElementById('inp-tp').value)   || 0;
+
+  var finalLot = lot;
+  if (riskUsd > 0 && sl > 0) {
+    var dist = Math.abs(price - sl);
+    if (dist > 0) finalLot = riskUsd / dist;
+  }
+
+  var cost = finalLot * price;
+  if (cost > balance) { showToast('Yetersiz bakiye', 'loss'); return; }
+
+  var pos = {
+    id: ++posSeq, side: side,
+    entryPrice: price, lot: finalLot, cost: cost,
+    sl: sl || 0, tp: tp || 0, pnl: 0,
+  };
+  positions.push(pos);
+  balance -= cost;
+  updateAccountUI();
+  renderPositions();
+  showToast((side === 'BUY' ? 'LONG' : 'SHORT') + ' acildi @ ' + fmtPrice(price),
+    side === 'BUY' ? 'profit' : 'loss');
+}
+
+function closePos(id) {
+  var pos = null;
+  for (var i = 0; i < positions.length; i++) {
+    if (positions[i].id === id) { pos = positions[i]; break; }
+  }
+  if (!pos) return;
+  var price = parseFloat(document.getElementById('cur-price').textContent) || pos.entryPrice;
+  doClose(pos, price);
+}
+
+function doClose(pos, closePrice) {
+  var pnl = pos.side === 'BUY'
+    ? (closePrice - pos.entryPrice) * pos.lot
+    : (pos.entryPrice - closePrice) * pos.lot;
+  balance += pos.cost + pnl;
+  trades.push({ id: pos.id, side: pos.side, entryPrice: pos.entryPrice,
+    lot: pos.lot, closePrice: closePrice, pnl: pnl });
+  positions = positions.filter(function(p) { return p.id !== pos.id; });
+  updateAccountUI();
+  renderPositions();
+  renderTrades();
+  showToast('Kapatildi ' + (pnl >= 0 ? '+' : '') + fmtUSD(Math.abs(pnl)),
+    pnl >= 0 ? 'profit' : 'loss');
+}
+
+function checkPositions(candle) {
+  var toClose = [];
+  for (var i = 0; i < positions.length; i++) {
+    var pos = positions[i];
+    pos.pnl = pos.side === 'BUY'
+      ? (candle.close - pos.entryPrice) * pos.lot
+      : (pos.entryPrice - candle.close) * pos.lot;
+    if (pos.sl > 0) {
+      var slHit = pos.side === 'BUY' ? candle.low <= pos.sl : candle.high >= pos.sl;
+      if (slHit) { toClose.push({ pos: pos, price: pos.sl }); continue; }
+    }
+    if (pos.tp > 0) {
+      var tpHit = pos.side === 'BUY' ? candle.high >= pos.tp : candle.low <= pos.tp;
+      if (tpHit) { toClose.push({ pos: pos, price: pos.tp }); }
+    }
+  }
+  for (var j = 0; j < toClose.length; j++) {
+    doClose(toClose[j].pos, toClose[j].price);
+  }
+  if (positions.length > 0) renderPositions();
+}
+
+// ─── UI helpers ───────────────────────────────────────────────────────────────
+function fmtPrice(n) {
+  if (n == null || isNaN(n)) return '--';
+  var dec = PAIR_DEC[sym] || 2;
+  return n >= 1000
+    ? n.toLocaleString('en-US', { minimumFractionDigits: dec, maximumFractionDigits: dec })
+    : n.toFixed(dec);
+}
+function fmtUSD(n) {
+  return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function updateAccountUI() {
+  var unrealized = 0;
+  var locked     = 0;
+  for (var i = 0; i < positions.length; i++) {
+    unrealized += positions[i].pnl;
+    locked     += positions[i].cost;
+  }
+  var equity = balance + locked + unrealized;
+  var pnl    = equity - START_BALANCE;
+
+  document.getElementById('disp-equity').textContent = fmtUSD(equity);
+  var pEl = document.getElementById('disp-pnl');
+  pEl.textContent = (pnl >= 0 ? '+' : '') + fmtUSD(pnl);
+  pEl.className   = 'acct-pnl ' + (pnl >= 0 ? 'up' : 'down');
+  document.getElementById('disp-trades').textContent = String(trades.length);
+
+  if (trades.length > 0) {
+    var wins     = 0;
+    var totalPnl = 0;
+    var best     = -Infinity;
+    var worst    = Infinity;
+    for (var j = 0; j < trades.length; j++) {
+      var t = trades[j];
+      if (t.pnl >= 0) wins++;
+      totalPnl += t.pnl;
+      if (t.pnl > best)  best  = t.pnl;
+      if (t.pnl < worst) worst = t.pnl;
+    }
+    document.getElementById('st-wr').textContent   = Math.round(wins / trades.length * 100) + '%';
+    var stPnl = document.getElementById('st-pnl');
+    stPnl.textContent = (totalPnl >= 0 ? '+' : '') + fmtUSD(totalPnl);
+    stPnl.className   = 'sc-val ' + (totalPnl >= 0 ? 'up' : 'down');
+    document.getElementById('st-best').textContent  = '+' + fmtUSD(best === -Infinity ? 0 : best);
+    document.getElementById('st-worst').textContent = fmtUSD(worst === Infinity ? 0 : worst);
+  }
+}
+
+function renderPositions() {
+  var el = document.getElementById('pos-list');
+  if (positions.length === 0) {
+    el.innerHTML = '<div class="empty">Acik pozisyon yok</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < positions.length; i++) {
+    var p   = positions[i];
+    var cls = p.side === 'BUY' ? 'lng' : 'sht';
+    var lbl = p.side === 'BUY' ? 'LONG' : 'SHORT';
+    var pnlColor = p.pnl >= 0 ? 'var(--up)' : 'var(--down)';
+    html += '<div class="pos-card">' +
+      '<div class="pos-head">' +
+        '<span class="pos-badge ' + cls + '">' + lbl + '</span>' +
+        '<span class="pos-pnl" style="color:' + pnlColor + '">' +
+          (p.pnl >= 0 ? '+' : '') + fmtUSD(p.pnl) +
+        '</span>' +
+      '</div>' +
+      '<div class="pos-meta">Giris: ' + fmtPrice(p.entryPrice) + ' - Lot: ' + p.lot.toFixed(4) + '</div>' +
+      (p.sl > 0 ? '<div class="pos-sltp" style="color:var(--down)">SL ' + fmtPrice(p.sl) + '</div>' : '') +
+      (p.tp > 0 ? '<div class="pos-sltp" style="color:var(--up)">TP ' + fmtPrice(p.tp) + '</div>'   : '') +
+      '<button class="btn-close-pos" onclick="closePos(' + p.id + ')">Kapat</button>' +
+    '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function renderTrades() {
+  var el = document.getElementById('trade-list');
+  if (trades.length === 0) {
+    el.innerHTML = '<div class="empty">Henuz kapatilmis islem yok</div>';
+    return;
+  }
+  var html = '';
+  for (var i = trades.length - 1; i >= 0; i--) {
+    var t      = trades[i];
+    var pnlCls = t.pnl >= 0 ? 'up' : 'down';
+    var dir    = t.side === 'BUY' ? 'L' : 'S';
+    html += '<div class="trade-row">' +
+      '<div class="trade-row-head">' +
+        '<span class="trade-sym">' + (PAIR_LABELS[sym] || sym) + ' [' + dir + ']</span>' +
+        '<span class="trade-pnl ' + pnlCls + '">' +
+          (t.pnl >= 0 ? '+' : '') + fmtUSD(t.pnl) +
+        '</span>' +
+      '</div>' +
+      '<div style="font-size:0.68rem;color:var(--muted);margin-top:2px">' +
+        fmtPrice(t.entryPrice) + ' to ' + fmtPrice(t.closePrice) + ' - ' + t.lot.toFixed(4) + ' lot' +
+      '</div>' +
+    '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function showLoading(show, msg, sub) {
+  document.getElementById('loading').classList.toggle('hidden', !show);
+  if (msg) document.getElementById('loading-msg').textContent = msg;
+  if (sub) document.getElementById('loading-sub').textContent = sub;
+}
+
+var toastTimer = null;
+function showToast(msg, type) {
+  type = type || 'info';
+  var el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className   = 'show ' + type;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function() { el.className = type; }, 2600);
+}
+
+function openModal() {
+  setPlaying(false);
+  var locked = 0;
+  var unreal = 0;
+  for (var i = 0; i < positions.length; i++) {
+    locked += positions[i].cost;
+    unreal += positions[i].pnl;
+  }
+  var equity = balance + locked + unreal;
+  var pnl    = equity - START_BALANCE;
+  var pct    = (pnl / START_BALANCE * 100).toFixed(1);
+  var pColor = pnl >= 0 ? 'var(--up)' : 'var(--down)';
+  document.getElementById('modal-stats').innerHTML =
+    '<div class="ms-card"><div class="ms-lbl">Bakiye</div>' +
+      '<div class="ms-val" style="color:' + pColor + '">' + fmtUSD(equity) + '</div></div>' +
+    '<div class="ms-card"><div class="ms-lbl">PnL</div>' +
+      '<div class="ms-val" style="color:' + pColor + '">' + (pnl >= 0 ? '+' : '') + pct + '%</div></div>' +
+    '<div class="ms-card"><div class="ms-lbl">Islem</div>' +
+      '<div class="ms-val">' + trades.length + '</div></div>';
+  document.getElementById('end-modal').classList.add('show');
+}
+function closeModal()  { document.getElementById('end-modal').classList.remove('show'); }
+function confirmEnd()  { closeModal(); window.location.href = '/'; }
+
+// ─── Panel tabs ───────────────────────────────────────────────────────────────
+var tabs = document.querySelectorAll('.p-tab');
+for (var t = 0; t < tabs.length; t++) {
+  tabs[t].addEventListener('click', function() {
+    for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+    this.classList.add('active');
+    var n = this.dataset.tab;
+    document.getElementById('tab-trade').style.display     = n === 'trade'     ? '' : 'none';
+    document.getElementById('tab-positions').style.display = n === 'positions' ? '' : 'none';
+    document.getElementById('tab-history').style.display   = n === 'history'   ? '' : 'none';
+  });
+}
+
+// ─── Event listeners ──────────────────────────────────────────────────────────
+document.getElementById('btn-play').addEventListener('click', function() { setPlaying(!isPlaying); });
+document.getElementById('btn-step-fwd').addEventListener('click',  stepFwd);
+document.getElementById('btn-step-back').addEventListener('click', stepBack);
+document.getElementById('btn-end').addEventListener('click',       openModal);
+
+document.getElementById('speed-select').addEventListener('change', function(e) {
+  replaySpeed = parseFloat(e.target.value);
+  if (isPlaying) { setPlaying(false); setPlaying(true); }
+});
+
+// Pair degisimi → resetBacktest
+document.getElementById('symbol-select').addEventListener('change', function(e) {
+  sym = e.target.value;
+  resetBacktest();
+});
+
+// TF butonlari → resetBacktest
+var tfBtns = document.querySelectorAll('.tf-btn');
+for (var b = 0; b < tfBtns.length; b++) {
+  tfBtns[b].addEventListener('click', function() {
+    for (var i = 0; i < tfBtns.length; i++) tfBtns[i].classList.remove('active');
+    this.classList.add('active');
+    tf = this.dataset.tf;
+    resetBacktest();
+  });
+}
+
+// Klavye kisayollari
+document.addEventListener('keydown', function(e) {
+  var tag = e.target.tagName;
+  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+  if (e.code === 'Space')      { e.preventDefault(); setPlaying(!isPlaying); }
+  if (e.code === 'ArrowRight') { e.preventDefault(); stepFwd(); }
+});
+
+// ─── Baslangic ────────────────────────────────────────────────────────────────
+resetBacktest();
+</script>
+</body>
+</html>

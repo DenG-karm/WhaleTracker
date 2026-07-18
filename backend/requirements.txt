@@ -1,0 +1,33 @@
+fastapi==0.136.1
+starlette==0.46.2          # fastapi 0.136.1 ile test edilmiş starlette versiyon — 1.0.0 breaking changes önlenir
+uvicorn==0.46.0
+gunicorn==26.0.0           # Production WSGI/ASGI sunucusu
+# ── Veritabanı ────────────────────────────────────────────────────────────────
+sqlalchemy==2.0.49
+psycopg2-binary==2.9.12    # PostgreSQL driver (sync)
+asyncpg==0.31.0            # PostgreSQL driver (async – high-perf raw queries)
+alembic==1.18.4            # Migration yönetimi
+pydantic[email]==2.13.4
+python-dotenv==1.2.2
+pandas==2.3.3
+requests==2.33.1
+python-multipart==0.0.28
+groq==0.13.0                     # Groq LPU inference (Llama 3.3 70B, vision desteği)
+google-genai>=1.15.0,<2.0.0       # Gemini SDK — 1.15.0+ websockets==16.0 ile uyumlu
+bcrypt==5.0.0
+passlib==1.7.4
+python-jose[cryptography]==3.5.0
+PyJWT==2.12.1
+websockets==16.0
+httpx==0.28.1
+yfinance==1.3.0            # ABD + BİST hisse fiyatları (Yahoo Finance)
+# ── Güvenlik Katmanı ──────────────────────────────────────────────────────────
+pyotp==2.9.0               # TOTP / 2FA (Google Authenticator)
+cryptography==48.0.0       # AES-256-GCM şifreleme (field encryption)
+slowapi==0.1.9             # Rate limiting
+# ── Celery & Redis (Scalability) ──────────────────────────────────────────────
+celery==5.6.3              # Asynchronous task queue
+redis==7.4.0               # Cache, pub/sub, and Celery broker/backend
+stripe==15.1.0             # Stripe payments SDK
+resend==2.10.0             # Resend transactional email API
+# smtplib (standart kütüphane) — Gmail SMTP üzerinden e-posta gönderimi

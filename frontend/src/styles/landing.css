@@ -1,0 +1,277 @@
+/* ── Space Grotesk font (headings) ── */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
+
+/* ═══════════════════════════════════════════════════════
+   BODY OVERRIDE — only when landing page is mounted
+   ═══════════════════════════════════════════════════════ */
+body.wt-landing-active {
+  background: #020408;
+  color: #f0f4ff;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body.wt-landing-active::-webkit-scrollbar { width: 3px; }
+body.wt-landing-active::-webkit-scrollbar-track { background: #020408; }
+body.wt-landing-active::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.22); border-radius: 2px; }
+body.wt-landing-active ::selection { background: rgba(0,212,255,0.18); }
+
+/* ═══════════════════════════════════════════════════════
+   SCOPE ROOT — all landing styles live inside .wt-landing
+   CSS variables are scoped here to avoid conflicts with
+   the app's own :root variables (e.g. --border, --text)
+   ═══════════════════════════════════════════════════════ */
+.wt-landing {
+  --bg:        #020408;
+  --bg-2:      #060e1c;
+  --surface:   rgba(255, 255, 255, 0.035);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --border:    rgba(255, 255, 255, 0.07);
+  --border-2:  rgba(255, 255, 255, 0.14);
+  --cyan:      #00d4ff;
+  --emerald:   #10b981;
+  --text:      #f0f4ff;
+  --muted:     rgba(240, 244, 255, 0.42);
+  --muted-2:   rgba(240, 244, 255, 0.68);
+  --f-sans:    'Inter', system-ui, sans-serif;
+  --f-head:    'Space Grotesk', system-ui, sans-serif;
+
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--f-sans);
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ── Containers ── */
+.wt-landing .wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: clamp(1.5rem, 5vw, 4rem);
+}
+.wt-landing .wrap-narrow {
+  width: 100%;
+  max-width: 820px;
+  margin-inline: auto;
+  padding-inline: clamp(1.5rem, 5vw, 4rem);
+}
+
+/* ── Typography ── */
+.wt-landing .t-head { font-family: var(--f-head); font-weight: 800; }
+
+.wt-landing .g-text {
+  background: linear-gradient(135deg, #00d4ff 0%, #1a6fe0 55%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.wt-landing .g-emerald {
+  background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.wt-landing .gradient-text {
+  background: linear-gradient(135deg, #00d4ff 0%, #1a6fe0 55%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Cards ── */
+.wt-landing .card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+.wt-landing .card:hover {
+  border-color: rgba(0, 212, 255, 0.2);
+  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0, 212, 255, 0.07);
+  transform: translateY(-4px);
+}
+.wt-landing .glass-card {
+  background: rgba(10, 31, 61, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 212, 255, 0.08);
+  border-radius: 16px;
+}
+
+/* ── Buttons ── */
+.wt-landing .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  border-radius: 100px;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  background: none;
+  font-family: var(--f-sans);
+}
+.wt-landing .btn-primary {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #000 !important;
+  position: relative;
+  overflow: hidden;
+}
+.wt-landing .btn-primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, transparent 40%, rgba(255, 255, 255, 0.15) 50%, transparent 60%);
+  transform: translateX(-100%);
+  transition: transform 0.55s ease;
+}
+.wt-landing .btn-primary:hover::after { transform: translateX(100%); }
+.wt-landing .btn-primary:hover {
+  background: linear-gradient(135deg, #34d399, #10b981);
+  box-shadow: 0 0 36px rgba(16, 185, 129, 0.55), 0 0 70px rgba(16, 185, 129, 0.15);
+  transform: translateY(-2px);
+}
+.wt-landing .btn-outline {
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  color: rgba(240, 244, 255, 0.6);
+  background: transparent;
+}
+.wt-landing .btn-outline:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+/* ── Nav ── */
+.wt-landing .nav-base {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  transition: background 0.5s ease, border-color 0.5s ease;
+  border-bottom: 1px solid transparent;
+}
+.wt-landing .nav-frosted {
+  background: rgba(2, 4, 8, 0.88);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  border-bottom-color: rgba(255, 255, 255, 0.06);
+}
+
+/* ── Lang switcher ── */
+.wt-landing .lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(240, 244, 255, 0.55);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: var(--f-sans);
+}
+.wt-landing .lang-btn:hover {
+  border-color: rgba(0, 212, 255, 0.35);
+  color: rgba(0, 212, 255, 0.9);
+  background: rgba(0, 212, 255, 0.06);
+}
+.wt-landing .lang-btn.active {
+  border-color: rgba(0, 212, 255, 0.4);
+  color: #00d4ff;
+  background: rgba(0, 212, 255, 0.08);
+}
+
+/* ── Hero ── */
+.wt-landing .hero-wrap {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+}
+.wt-landing .hero-blend::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 35vh;
+  background: linear-gradient(to bottom, transparent 0%, rgba(2, 4, 8, 0.7) 55%, #020408 100%);
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* ── Section stacking ── */
+.wt-landing .section-base {
+  position: relative;
+  z-index: 2;
+  background: var(--bg);
+}
+
+/* ── Community → Climax blend ── */
+.wt-landing .community-blend::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  height: 45vh;
+  background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.65) 55%, #000 100%);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* ── Climax ── */
+.wt-landing .climax-section { position: relative; z-index: 0; }
+.wt-landing .climax-inner {
+  position: relative;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* ── Noise overlay ── */
+.wt-landing .noise {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 999;
+  opacity: 0.018;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── Animations ── */
+@keyframes wt-pulse-anim {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.35; transform: scale(0.75); }
+}
+.wt-landing .pulse { animation: wt-pulse-anim 2.2s ease-in-out infinite; }
+
+@keyframes wt-bounce-y {
+  0%, 100% { transform: translateY(0) translateX(-50%); }
+  50%       { transform: translateY(10px) translateX(-50%); }
+}
+.wt-landing .bounce-y { animation: wt-bounce-y 2.4s ease-in-out infinite; }
+
+@keyframes wt-ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.wt-landing .ticker-track { display: inline-block; animation: wt-ticker 30s linear infinite; }
+
+/* ── Feature card hover ── */
+.wt-landing .feature-card {
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  cursor: default;
+}
+.wt-landing .feature-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0, 212, 255, 0.22);
+  box-shadow: 0 20px 60px rgba(0, 212, 255, 0.07);
+}

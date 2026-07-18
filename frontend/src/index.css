@@ -1,0 +1,267 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap&subset=latin,latin-ext');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-app: #f8fafc;
+  --bg-card: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+  --primary: #4f46e5;
+  --primary-light: #e0e7ff;
+  --success: #10b981;
+  --danger: #ef4444;
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+.dark-mode {
+  --bg-app: #0f172a;
+  --bg-card: #1e293b;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --border: #334155;
+  --primary: #00dbe7;
+  --primary-light: rgba(99, 102, 241, 0.2);
+  --success: #34d399;
+  --danger: #f87171;
+  --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+}
+
+* {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  transition: all 0.3s ease;
+}
+
+/* Türkçe karakter unicode range */
+@font-face {
+  font-family: 'Inter';
+  unicode-range: U+011E, U+011F, U+0130, U+0131,
+                 U+00C7, U+00E7, U+015E, U+015F,
+                 U+00D6, U+00F6, U+00DC, U+00FC;
+}
+
+/* Logo tipografisi */
+.logo-text-whale {
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #00d4ff, #7b2fff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.logo-text-tracker {
+  font-weight: 400;
+  color: rgba(255,255,255,0.9);
+}
+
+.logo-subtext {
+  font-size: 0.55em;
+  letter-spacing: 0.3em;
+  color: rgba(255,255,255,0.4);
+  text-transform: uppercase;
+}
+
+.aesthetic-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow-md);
+  transition: all 0.3s ease;
+}
+
+.btn-fluid {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fluid-input {
+  width: 100%;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-app);
+  color: var(--text-main);
+  outline: none;
+  box-sizing: border-box;
+}
+
+.nav-item-fluid {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+}
+.nav-item-fluid:hover { background: var(--bg-app); }
+.nav-item-fluid.active { background: var(--primary-light); color: var(--primary); font-weight: 700; }
+
+.fade-in { animation: fadeIn 0.4s ease-out forwards; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ── Zen Mode ─────────────────────────────────────────────────── */
+.zen-btn-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.zen-tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: rgba(15, 23, 42, 0.95);
+  color: white;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(8px);
+  letter-spacing: 0.04em;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  z-index: 999;
+}
+
+.zen-btn-wrapper:hover .zen-tooltip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0px);
+}
+
+.zen-value {
+  display: inline-block;
+}
+
+/* Hover Effects for Landing Page */
+.hover-glow {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.hover-glow:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+  border-color: rgba(99, 102, 241, 0.6) !important;
+}
+/* ── Mobile Responsive ───────────────────────────────────────── */
+@media (max-width: 767px) {
+  [style*="grid-template-columns: repeat(4"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  [style*="grid-template-columns: repeat(3"] {
+    grid-template-columns: repeat(1, 1fr) !important;
+  }
+  [style*="grid-template-columns: repeat(2"] {
+    grid-template-columns: repeat(1, 1fr) !important;
+  }
+  h1 { font-size: 1.4rem !important; }
+  h2 { font-size: 1.15rem !important; }
+  .aesthetic-card { border-radius: 14px !important; }
+  .mobile-col { flex-direction: column !important; }
+  .mobile-px { padding-left: 12px !important; padding-right: 12px !important; }
+  .mobile-hide { display: none !important; }
+}
+
+/* ── Abyssal Precision — Glassmorphic System ─────────────────────────────── */
+@layer components {
+  /* Temel cam kart efekti: üst/sol kenarlık vurgusu ile derinlik hissi verir */
+  .glass-card {
+    background-color: rgba(29, 32, 38, 0.7);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-top-color: rgba(255, 255, 255, 0.1);
+    border-left-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.5rem;
+    transition: border-color 0.3s ease;
+  }
+
+  /* Form elemanlarının focus durumu */
+  .glass-input:focus {
+    outline: none !important;
+    border-color: #00dbe7 !important;
+    box-shadow: 0 0 0 1px #00dbe7, 0 0 8px rgba(0, 219, 231, 0.25) !important;
+  }
+}
+
+/* ── Özel Kaydırma Çubuğu ────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #272a31;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00dbe7;
+}
+
+/* ── Landing Page Animasyonları ──────────────────────────────────────────── */
+@keyframes whale-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px rgba(0, 219, 231, 0.9); }
+  50%       { opacity: 0.5; box-shadow: 0 0 4px rgba(0, 219, 231, 0.4); }
+}
+.whale-pulse { animation: whale-pulse 2s ease-in-out infinite; }
+
+/* ── Aurora Hero Animasyonları ───────────────────────────────────────────── */
+@keyframes auroraA {
+  0%   { transform: translate(0, 0) scale(1); }
+  33%  { transform: translate(8%, -12%) scale(1.12); }
+  66%  { transform: translate(-6%, 10%) scale(0.95); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes auroraB {
+  0%   { transform: translate(0, 0) scale(1); }
+  40%  { transform: translate(-10%, 8%) scale(1.08); }
+  70%  { transform: translate(12%, -6%) scale(0.92); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+@keyframes auroraC {
+  0%   { transform: translate(0, 0) scale(1); }
+  30%  { transform: translate(6%, 10%) scale(1.15); }
+  60%  { transform: translate(-8%, -8%) scale(0.9); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+/* ── TradeTerminal Tilt Overlay Animasyonları ────────────────────────────── */
+@keyframes wt-tilt-pulse {
+  0%, 100% { box-shadow: 0 0 40px rgba(239,68,68,0.35), inset 0 0 20px rgba(239,68,68,0.08); }
+  50%       { box-shadow: 0 0 65px rgba(239,68,68,0.6),  inset 0 0 30px rgba(239,68,68,0.15); }
+}
+@keyframes wt-tilt-blink {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 0.1; }
+}
+
+/* ── X-Ray Modu Animasyonları ────────────────────────────────────────────── */
+@keyframes scan-pulse {
+  0%, 100% { opacity: 1; text-shadow: 0 0 8px #00dbe7; }
+  50%       { opacity: 0.5; text-shadow: none; }
+}
+.pulse-anim { animation: scan-pulse 1.5s infinite; }

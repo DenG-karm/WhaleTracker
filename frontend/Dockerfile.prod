@@ -1,0 +1,54 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# frontend/Dockerfile.prod — Multi-stage production build
+#
+# Aşama 1 (builder): npm run build → /app/build
+# Aşama 2 (nginx):   sadece build/static dosyaları serve eder (~25 MB image)
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── AŞAMA 1: Build ───────────────────────────────────────────────────────────
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --legacy-peer-deps
+
+COPY . .
+
+# REACT_APP_API_URL production'da boş kalır;
+# istek aynı origin'den geldiği için Nginx forward eder
+ARG REACT_APP_API_URL=""
+ARG REACT_APP_GOOGLE_CLIENT_ID=""
+ARG REACT_APP_POSTHOG_KEY=""
+ARG REACT_APP_POSTHOG_HOST="https://app.posthog.com"
+
+ENV REACT_APP_API_URL=$REACT_APP_API_URL \
+    REACT_APP_GOOGLE_CLIENT_ID=$REACT_APP_GOOGLE_CLIENT_ID \
+    REACT_APP_POSTHOG_KEY=$REACT_APP_POSTHOG_KEY \
+    REACT_APP_POSTHOG_HOST=$REACT_APP_POSTHOG_HOST \
+    NODE_ENV=production
+
+RUN npm run build
+
+# ── AŞAMA 2: Nginx static serve ──────────────────────────────────────────────
+FROM nginx:1.27-alpine
+
+# React build çıktısını Nginx root'una kopyala
+COPY --from=builder /app/build /usr/share/nginx/html
+
+# SPA routing: bilinmeyen path'leri index.html'e yönlendir
+RUN printf 'server {\n\
+    listen 80;\n\
+    root /usr/share/nginx/html;\n\
+    index index.html;\n\
+    location / {\n\
+        try_files $uri $uri/ /index.html;\n\
+    }\n\
+    # Statik varlıklar uzun cache\n\
+    location /static/ {\n\
+        expires 1y;\n\
+        add_header Cache-Control "public, immutable";\n\
+    }\n\
+}\n' > /etc/nginx/conf.d/default.conf
+
+EXPOSE 80

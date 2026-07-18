@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Body -->
+  <ellipse cx="30" cy="34" rx="22" ry="13" fill="url(#wbody)" />
+  <!-- Tail -->
+  <path d="M52 34 C58 28, 64 20, 60 14 C56 20, 54 22, 52 34Z" fill="url(#wtail)" />
+  <path d="M52 34 C58 40, 64 48, 60 54 C56 48, 54 46, 52 34Z" fill="url(#wtail)" />
+  <!-- Flippers -->
+  <path d="M24 44 C18 50, 10 52, 8 46 C14 44, 20 42, 24 44Z" fill="url(#wfin)" />
+  <!-- Dorsal fin -->
+  <path d="M32 22 C34 16, 40 12, 42 18 C40 20, 36 22, 32 22Z" fill="url(#wfin)" />
+  <!-- Eye -->
+  <circle cx="18" cy="30" r="2.5" fill="#00d4ff" />
+  <circle cx="18" cy="30" r="1" fill="#fff" />
+  <!-- Mouth -->
+  <path d="M10 36 Q14 40 18 36" stroke="#00d4ff" stroke-width="1.5" stroke-linecap="round" fill="none" />
+  <!-- Glow rings -->
+  <circle cx="32" cy="34" r="26" stroke="#00d4ff" stroke-width="0.5" stroke-opacity="0.2" stroke-dasharray="3 4" />
+  <defs>
+    <linearGradient id="wbody" x1="8" y1="21" x2="52" y2="47" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1a6fe0" />
+      <stop offset="100%" stop-color="#0047ab" />
+    </linearGradient>
+    <linearGradient id="wtail" x1="52" y1="14" x2="64" y2="54" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#00d4ff" />
+      <stop offset="100%" stop-color="#1a6fe0" />
+    </linearGradient>
+    <linearGradient id="wfin" x1="8" y1="44" x2="42" y2="12" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#0047ab" />
+      <stop offset="100%" stop-color="#00d4ff" />
+    </linearGradient>
+  </defs>
+</svg>

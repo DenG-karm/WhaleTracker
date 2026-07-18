@@ -1,0 +1,21 @@
+﻿
+> frontend@0.1.0 start
+> react-scripts start
+
+Starting the development server...
+
+docker : (node:25) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] Deprecati
+onWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setup
+Middlewares' option.
+At line:1 char:1
++ docker logs whaletracker_frontend 2>&1 | Out-String | Out-File -FileP ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ((node:25) [DEP_...ewares' option. 
+   :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:25) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarnin
+g: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlew
+ares' option.
+

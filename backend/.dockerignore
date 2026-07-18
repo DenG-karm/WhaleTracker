@@ -1,0 +1,43 @@
+# Virtual environment — never copy into Docker image
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Test & coverage
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Alembic SQLite state (geliştirme)
+celerybeat-schedule
+
+# IDE & OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Local env files (secrets)
+.env
+.env.*
+
+# Logs
+*.log
+logs/
+
+# Temp uploads (production'da volume mount edilir)
+uploads/*
+!uploads/.gitkeep

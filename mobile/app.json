@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "WhaleTracker",
+    "slug": "whaletracker-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#020617"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.whaletracker.mobile"
+    },
+    "android": {
+      "package": "app.whaletracker.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#020617"
+      }
+    },
+    "platforms": ["ios", "android", "web"],
+    "scheme": "whaletracker",
+    "plugins": ["expo-secure-store"],
+    "extra": {
+      "API_BASE_URL": "http://192.168.1.31:8000",
+      "WS_BASE_URL": "ws://192.168.1.31:8000"
+    }
+  }
+}
