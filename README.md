@@ -19,6 +19,8 @@ Originally conceived as a closed-source startup, **WhaleTracker** is now open-so
 
 This repository contains the complete microservice architecture including the **FastAPI Backend**, **React Frontend**, and **React Native Mobile App**.
 
+> **📡 Live Deployment Status:** You can view the landing page at [https://whaletrackerhq.com](https://whaletrackerhq.com). Since WhaleTracker is a completely bootstrapped project built without external funding, the heavy cloud backend and AI pipelines are temporarily spun down to manage server costs. However, if there is enough community demand, we are fully prepared to deploy the backend to Railway and activate the live terminal for everyone!
+
 ### 🧠 Core Features
 
 1. **Live Whale & Order Block Intelligence**
